@@ -1,36 +1,8 @@
-import boto3
-from functools import wraps
-from loguru import logger
-from utils import Utils
+from tools.utils import Utils
+from tools.ssm import AWSSSMClient
 # 配置loguru的logger
-logger.add("parameter_store.log",
-           format="{time} {level} {message}", level="DEBUG")
-
-
-@Utils.exception_handler
-def write_parameters_to_parameter_store(parameters):
-    """
-    将参数写入AWS Parameter Store。
-
-    :param parameters: 字典，包含参数名和值
-    """
-    ssm_client = boto3.client('ssm')
-
-    for parameter, value in parameters.items():
-        full_parameter_name = f"/{parameter}"
-        try:
-            response = ssm_client.put_parameter(
-                Name=full_parameter_name,
-                Value=str(value),
-                Type='String',
-                Overwrite=True
-            )
-            logger.info(
-                f"Parameter '{full_parameter_name}' written: {response}")
-        except boto3.exceptions.Boto3Error as e:  # 捕获boto3可能抛出的异常
-            logger.error(
-                f"Failed to write parameter '{full_parameter_name}': {e}")
-            raise
+Utils.logger.add("parameter_store.log",
+                 format="{time} {level} {message}", level="DEBUG")
 
 
 def main():
@@ -66,7 +38,10 @@ def main():
         f'{prefix}/scaleInAvgTaskNodeCPULoadMinutes': 5,
     }
 
-    write_parameters_to_parameter_store(parameters)
+    # 创建AWSSSMClient实例
+    ssm_client = AWSSSMClient()
+    # 调用write_parameters_to_parameter_store方法
+    ssm_client.write_parameters_to_parameter_store(parameters)
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
-
 from functools import wraps
 import statistics
+import asyncio
 from tools.utils import Utils
 from tools.ssm import AWSSSMClient
 
@@ -10,7 +10,7 @@ Utils.logger.add("managed_scaling_enhanced.log",
 
 
 @Utils.exception_handler
-def determine_scale_status(YARNMemoryAvailablePercentageList, CapacityRemainingGBList, pendingAppNumList, taskNodeCPULoadList, currentMaxUnitNum):
+async def determine_scale_status(YARNMemoryAvailablePercentageList, CapacityRemainingGBList, pendingAppNumList, taskNodeCPULoadList, currentMaxUnitNum):
     """
     根据输入的监控数据和当前最大单元数，决定是否扩缩容。
     """
@@ -18,26 +18,33 @@ def determine_scale_status(YARNMemoryAvailablePercentageList, CapacityRemainingG
     ssm_client = AWSSSMClient()
     prefix = "managedScalingEnhanced"
 
-    minimumUnits = int(ssm_client.get_parameters_from_parameter_store(
-        f'/{prefix}/minimumUnits'))
-    maximumUnits = int(ssm_client.get_parameters_from_parameter_store(
-        f'/{prefix}/maximumUnits'))
-    scaleOutAvgYARNMemoryAvailablePercentageValue = float(ssm_client.get_parameters_from_parameter_store(
-        f'/{prefix}/scaleOutAvgYARNMemoryAvailablePercentageValue'))
-    scaleOutAvgCapacityRemainingGBValue = float(ssm_client.get_parameters_from_parameter_store(
-        f'/{prefix}/scaleOutAvgCapacityRemainingGBValue'))
-    scaleOutAvgPendingAppNumValue = float(ssm_client.get_parameters_from_parameter_store(
-        f'/{prefix}/scaleOutAvgPendingAppNumValue'))
-    scaleOutAvgTaskNodeCPULoadValue = float(ssm_client.get_parameters_from_parameter_store(
-        f'/{prefix}/scaleOutAvgTaskNodeCPULoadValue'))
-    scaleInAvgYARNMemoryAvailablePercentageValue = float(ssm_client.get_parameters_from_parameter_store(
-        f'/{prefix}/scaleInAvgYARNMemoryAvailablePercentageValue'))
-    scaleInAvgCapacityRemainingGBValue = float(ssm_client.get_parameters_from_parameter_store(
-        f'/{prefix}/scaleInAvgCapacityRemainingGBValue'))
-    scaleInAvgPendingAppNumValue = float(ssm_client.get_parameters_from_parameter_store(
-        f'/{prefix}/scaleInAvgPendingAppNumValue'))
-    scaleInAvgTaskNodeCPULoadValue = float(ssm_client.get_parameters_from_parameter_store(
-        f'/{prefix}/scaleInAvgTaskNodeCPULoadValue'))
+    parameter_names = [
+    f'/{prefix}/minimumUnits',
+    f'/{prefix}/maximumUnits',
+    f'/{prefix}/scaleOutAvgYARNMemoryAvailablePercentageValue',
+    f'/{prefix}/scaleOutAvgCapacityRemainingGBValue',
+    f'/{prefix}/scaleOutAvgPendingAppNumValue',
+    f'/{prefix}/scaleOutAvgTaskNodeCPULoadValue',
+    f'/{prefix}/scaleInAvgYARNMemoryAvailablePercentageValue',
+    f'/{prefix}/scaleInAvgCapacityRemainingGBValue',
+    f'/{prefix}/scaleInAvgPendingAppNumValue',
+    f'/{prefix}/scaleInAvgTaskNodeCPULoadValue',
+]
+    # 使用一次性获取所有参数的异步方法
+    parameters = await ssm_client.aioget_parameters_from_parameter_store(parameter_names)
+
+    # 转换参数类型
+    minimumUnits = int(parameters[0])
+    maximumUnits = int(parameters[1])
+    scaleOutAvgYARNMemoryAvailablePercentageValue = float(parameters[2])
+    scaleOutAvgCapacityRemainingGBValue = float(parameters[3])
+    scaleOutAvgPendingAppNumValue = float(parameters[4])
+    scaleOutAvgTaskNodeCPULoadValue = float(parameters[5])
+    scaleInAvgYARNMemoryAvailablePercentageValue = float(parameters[6])
+    scaleInAvgCapacityRemainingGBValue = float(parameters[7])
+    scaleInAvgPendingAppNumValue = float(parameters[8])
+    scaleInAvgTaskNodeCPULoadValue = float(parameters[9])
+
 
     # 判断逻辑
     # scaleOut单项条件状态
@@ -88,11 +95,11 @@ def determine_scale_status(YARNMemoryAvailablePercentageList, CapacityRemainingG
 
 # 示例调用，这里需要替换为实际参数
 if __name__ == '__main__':
-    scaleStatus = determine_scale_status(
+    scaleStatus = asyncio.run(determine_scale_status(
         YARNMemoryAvailablePercentageList=[70, 80, 75],
         CapacityRemainingGBList=[100, 110, 120],
         pendingAppNumList=[5, 6, 7],
         taskNodeCPULoadList=[80, 85, 90],
         currentMaxUnitNum=100
-    )
+    ))
     Utils.logger.info(f"Scale Status: {scaleStatus}")
