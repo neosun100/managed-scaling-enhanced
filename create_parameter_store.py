@@ -15,11 +15,13 @@ def main():
 
     # 使用prefix变量构建参数字典
     parameters = {
-        f'{prefix}/minimumUnits': 128,
-        f'{prefix}/maximumUnits': 512,
-        f'{prefix}/spotInstancesTimeout': 300,
-        f'{prefix}/monitorIntervalSeconds': 20,
-        f'{prefix}/actionIntervalSeconds': 20,
+        f'{prefix}/minimumUnits': 160,
+        f'{prefix}/maximumUnits': 640,
+
+        f'{prefix}/spotInstancesTimeout': 60*8,
+        f'{prefix}/monitorIntervalSeconds': 30,
+        f'{prefix}/actionIntervalSeconds': 30,
+
         f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageValue': 75,
         f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageMinutes': 5,
         f'{prefix}/scaleOutAvgCapacityRemainingGBValue': 150,
@@ -27,7 +29,8 @@ def main():
         f'{prefix}/scaleOutAvgPendingAppNumValue': 10,
         f'{prefix}/scaleOutAvgPendingAppNumMinutes': 5,
         f'{prefix}/scaleOutAvgTaskNodeCPULoadValue': 80,
-        f'{prefix}/scaleOutAvgTaskNodeCPULoadMinutes': 5,
+        f'{prefix}/scaleOutAvgTaskNodeCPULoadMinutes': 15,
+
         f'{prefix}/scaleInAvgYARNMemoryAvailablePercentageValue': 85,
         f'{prefix}/scaleInAvgYARNMemoryAvailablePercentageMinutes': 5,
         f'{prefix}/scaleInAvgCapacityRemainingGBValue': 200,
@@ -35,7 +38,7 @@ def main():
         f'{prefix}/scaleInAvgPendingAppNumValue': 5,
         f'{prefix}/scaleInAvgPendingAppNumMinutes': 5,
         f'{prefix}/scaleInAvgTaskNodeCPULoadValue': 60,
-        f'{prefix}/scaleInAvgTaskNodeCPULoadMinutes': 5,
+        f'{prefix}/scaleInAvgTaskNodeCPULoadMinutes': 15,
     }
 
     # 创建AWSSSMClient实例

@@ -26,6 +26,7 @@ class AWSSSMClient:
             Utils.logger.error(f"Failed to get parameter '{name}': {e}")
             raise
 
+    @Utils.exception_handler
     async def aioget_parameter_from_parameter_store(self, name):
         """
         异步从AWS Parameter Store获取单个参数值。
@@ -40,7 +41,7 @@ class AWSSSMClient:
             except Exception as e:
                 Utils.logger.error(f"Failed to get parameter '{name}': {e}")
                 raise
-
+    @Utils.exception_handler
     async def aioget_parameters_from_parameter_store(self, names):
         """
         异步并行从AWS Parameter Store获取多个参数值。

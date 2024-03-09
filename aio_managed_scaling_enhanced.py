@@ -1,13 +1,15 @@
-from functools import wraps
 import statistics
 import asyncio
 from tools.utils import Utils
 from tools.ssm import AWSSSMClient
+from tools.emr import AWSEMRClient
 
 # 配置loguru的logger
 Utils.logger.add("managed_scaling_enhanced.log",
                  format="{time} {level} {message}", level="DEBUG")
 
+
+emrID = 'j-1F74M1P9SC57B'
 
 @Utils.exception_handler
 async def determine_scale_status(YARNMemoryAvailablePercentageList, CapacityRemainingGBList, pendingAppNumList, taskNodeCPULoadList, currentMaxUnitNum):
@@ -15,6 +17,16 @@ async def determine_scale_status(YARNMemoryAvailablePercentageList, CapacityRema
     根据输入的监控数据和当前最大单元数，决定是否扩缩容。
     """
     # 定义前缀字符串变量
+
+    # 检查输入的监控数据列表是否都非空
+    if not YARNMemoryAvailablePercentageList or not CapacityRemainingGBList or not pendingAppNumList or not taskNodeCPULoadList:
+        Utils.logger.info(
+            "At least one of the input monitoring data lists is empty, so no scaling operations will be performed.")
+        Utils.logger.info(
+            f"Determining scale status with inputs: YARNMemoryAvailablePercentageList={YARNMemoryAvailablePercentageList}, CapacityRemainingGBList={CapacityRemainingGBList}, pendingAppNumList={pendingAppNumList}, taskNodeCPULoadList={taskNodeCPULoadList}, currentMaxUnitNum={currentMaxUnitNum}")
+        return 0
+
+
     ssm_client = AWSSSMClient()
     prefix = "managedScalingEnhanced"
 
@@ -99,7 +111,7 @@ if __name__ == '__main__':
         YARNMemoryAvailablePercentageList=[70, 80, 75],
         CapacityRemainingGBList=[100, 110, 120],
         pendingAppNumList=[5, 6, 7],
-        taskNodeCPULoadList=[80, 85, 90],
+        taskNodeCPULoadList=[],
         currentMaxUnitNum=100
     ))
     Utils.logger.info(f"Scale Status: {scaleStatus}")
