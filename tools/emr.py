@@ -39,6 +39,25 @@ class AWSEMRClient:
             f"Found {len(instance_ids)} instance IDs for cluster '{cluster_id}'")
 
         return instance_ids
+    
+
+    @Utils.exception_handler
+    def get_yarn_rm_url(self, cluster_id):
+        """
+        从指定的EMR集群获取YARN ResourceManager URL。
+
+        :param emr_cluster_id: EMR集群ID
+        :return: YARN ResourceManager URL
+        """
+        cluster_details = self.emr_client.describe_cluster(ClusterId=cluster_id)
+        cluster_details = cluster_details['Cluster']
+
+        # 获取主节点的公共DNS
+        master_public_dns = cluster_details['MasterPublicDnsName']
+
+        # 构造YARN ResourceManager URL
+        yarn_rm_url = f'http://{master_public_dns}:8088'
+        return yarn_rm_url
 
     @Utils.exception_handler
     def get_managed_scaling_policy(self, cluster_id):
@@ -79,4 +98,32 @@ class AWSEMRClient:
         Utils.logger.info(
             f"Managed Scaling policy updated for cluster '{cluster_id}': {response}")
 
+        return response
+
+
+    @Utils.exception_handler
+    def list_instance_fleets(self, ClusterId):
+        """
+        列出指定EMR集群的实例队列。
+
+        :param ClusterId: EMR集群ID
+        :return: 实例队列列表
+        """
+        response = self.emr_client.list_instance_fleets(ClusterId=ClusterId)
+        Utils.logger.info(f"Instance fleets response: {response}")
+        return response
+
+    @Utils.exception_handler
+    def modify_instance_fleet(self, ClusterId, InstanceFleet):
+        """
+        修改指定EMR集群的实例队列。
+
+        :param ClusterId: EMR集群ID
+        :param InstanceFleet: 实例队列配置
+        :return: 修改后的实例队列配置
+        """
+        response = self.emr_client.modify_instance_fleet(
+            ClusterId=ClusterId,
+            InstanceFleet=InstanceFleet
+        )
         return response

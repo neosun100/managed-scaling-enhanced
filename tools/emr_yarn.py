@@ -2,6 +2,8 @@ import sqlite3
 import time
 import boto3
 from .utils import Utils
+from .emr import AWSEMRClient
+import requests
 
 class EMRMetricManager:
     """
@@ -82,3 +84,24 @@ class EMRMetricManager:
         conn.close()
 
         return records
+
+
+    @Utils.exception_handler
+    def get_yarn_metrics(self, emr_cluster_id='j-1F74M1P9SC57B',metrics_name='pendingVirtualCores'):
+        """
+        从 YARN ResourceManager 获取指定指标的数据。
+
+        :param emr_cluster_id: EMR 集群 ID
+        :param metrics_name: 需要查询的当前yarn metrics_name ： 目前关注如下：pendingVirtualCores，appsPending，totalVirtualCores
+        :return: 包含 pendingVirtualCores 和 appsPending 指标的字典
+        """
+
+        emr_client = AWSEMRClient()
+        yarn_rm_url = emr_client.get_yarn_rm_url(emr_cluster_id)
+
+        # 获取 pendingVirtualCores 指标
+        response = requests.get(f"{yarn_rm_url}/ws/v1/cluster/metrics")
+        response.raise_for_status()
+        metrics = response.json().get('clusterMetrics', {})
+        return metrics.get(metrics_name, 0)
+

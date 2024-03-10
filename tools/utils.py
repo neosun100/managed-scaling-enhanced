@@ -22,5 +22,5 @@ class Utils:
             except Exception as e:
                 # 使用Utils类静态属性logger来记录异常信息
                 Utils.logger.error(f"An error occurred in {func.__name__}: {e}")
-                raise
+                raise e
         return wrapper

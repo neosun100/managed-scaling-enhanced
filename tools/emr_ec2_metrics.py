@@ -17,7 +17,7 @@ class NodeMetricsRetriever:
         Utils.logger.info(f"{instance_group_types_list} {instance_states_list} window_minutes={window_minutes} nodeids: {node_ids}")
 
         if not node_ids:
-            Utils.logger.info(
+            Utils.logger.warning(
                 f"The current cluster has no task nodes in the {instance_group_types_list} {instance_states_list} window_minutes={window_minutes}.")
             return []
 

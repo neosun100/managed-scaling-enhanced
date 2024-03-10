@@ -51,7 +51,7 @@ def get_yarn_rm_url(emr_cluster_id):
     yarn_rm_url = f'http://{master_public_dns}:8088'
     return yarn_rm_url
 
-
+@exception_handler
 def sanitize_table_name(table_name):
     """
     替换表名中的非法字符。
