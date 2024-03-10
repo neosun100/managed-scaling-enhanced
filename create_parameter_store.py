@@ -15,30 +15,33 @@ def main():
 
     # 使用prefix变量构建参数字典
     parameters = {
-        f'{prefix}/minimumUnits': 160,
-        f'{prefix}/maximumUnits': 640,
+        f'{prefix}/minimumUnits': 320,
+        f'{prefix}/maximumUnits': 1000,
 
         f'{prefix}/spotInstancesTimeout': 60*8,
         f'{prefix}/monitorIntervalSeconds': 30,
         f'{prefix}/actionIntervalSeconds': 30,
 
-        f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageValue': 75,
+        f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageValue': 10,
         f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageMinutes': 5,
-        f'{prefix}/scaleOutAvgCapacityRemainingGBValue': 150,
+        f'{prefix}/scaleOutAvgCapacityRemainingGBValue': 256,
         f'{prefix}/scaleOutAvgCapacityRemainingGBMinutes': 5,
-        f'{prefix}/scaleOutAvgPendingAppNumValue': 10,
+        f'{prefix}/scaleOutAvgPendingAppNumValue': 3,
         f'{prefix}/scaleOutAvgPendingAppNumMinutes': 5,
-        f'{prefix}/scaleOutAvgTaskNodeCPULoadValue': 80,
+        f'{prefix}/scaleOutAvgTaskNodeCPULoadValue': 50,
         f'{prefix}/scaleOutAvgTaskNodeCPULoadMinutes': 15,
 
-        f'{prefix}/scaleInAvgYARNMemoryAvailablePercentageValue': 85,
-        f'{prefix}/scaleInAvgYARNMemoryAvailablePercentageMinutes': 5,
-        f'{prefix}/scaleInAvgCapacityRemainingGBValue': 200,
-        f'{prefix}/scaleInAvgCapacityRemainingGBMinutes': 5,
-        f'{prefix}/scaleInAvgPendingAppNumValue': 5,
-        f'{prefix}/scaleInAvgPendingAppNumMinutes': 5,
-        f'{prefix}/scaleInAvgTaskNodeCPULoadValue': 60,
+        f'{prefix}/scaleInAvgYARNMemoryAvailablePercentageValue': 30,
+        f'{prefix}/scaleInAvgYARNMemoryAvailablePercentageMinutes': 3,
+        f'{prefix}/scaleInAvgCapacityRemainingGBValue': 512,
+        f'{prefix}/scaleInAvgCapacityRemainingGBMinutes': 3,
+        f'{prefix}/scaleInAvgPendingAppNumValue': 2,
+        f'{prefix}/scaleInAvgPendingAppNumMinutes': 2,
+        f'{prefix}/scaleInAvgTaskNodeCPULoadValue': 40,
         f'{prefix}/scaleInAvgTaskNodeCPULoadMinutes': 15,
+
+        f'{prefix}/scaleOutFactor': 1.5,
+        f'{prefix}/scaleInFactor': 1.7,   
     }
 
     # 创建AWSSSMClient实例

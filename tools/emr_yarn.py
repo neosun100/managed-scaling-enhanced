@@ -22,7 +22,7 @@ class EMRMetricManager:
         return ''.join(c if c.isalnum() or c == '_' else '_' for c in table_name)
 
     @Utils.exception_handler
-    def get_data_from_sqlite(self, emr_cluster_id, metric_name, prefix, ScaleStatus):
+    def get_data_from_sqlite(self, emr_cluster_id='j-1F74M1P9SC57B', metric_name='PendingAppNum', prefix='managedScalingEnhanced', ScaleStatus='scaleOut'):
         """
         从SQLite数据库中获取指定指标的数据。
 
@@ -47,9 +47,9 @@ class EMRMetricManager:
 
         # 4. 根据ScaleStatus和metric_name获取时间窗口
         if ScaleStatus == 'scaleOut':
-            time_range_param_name = f"{prefix}/scaleOutAvg{metric_name}Minutes"
+            time_range_param_name = f"/{prefix}/scaleOutAvg{metric_name}Minutes"
         elif ScaleStatus == 'scaleIn':
-            time_range_param_name = f"{prefix}/scaleInAvg{metric_name}Minutes"
+            time_range_param_name = f"/{prefix}/scaleInAvg{metric_name}Minutes"
         else:
             Utils.logger.error(f"Invalid ScaleStatus: {ScaleStatus}. ScaleStatus should be 'scaleOut' or 'scaleIn'.")
             return []

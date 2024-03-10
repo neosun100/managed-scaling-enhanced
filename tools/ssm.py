@@ -3,6 +3,7 @@ import aioboto3
 import asyncio
 from .utils import Utils  # 使用相对导入从同一包内导入Utils类
 
+
 class AWSSSMClient:
     """
     一个专门用于与AWS SSM服务交互的类。
@@ -18,13 +19,11 @@ class AWSSSMClient:
         :param name: 参数的名称
         :return: 参数的值
         """
-        try:
-            parameter = self.client.get_parameter(
-                Name=name, WithDecryption=True)
-            return parameter['Parameter']['Value']
-        except Exception as e:
-            Utils.logger.error(f"Failed to get parameter '{name}': {e}")
-            raise
+        Utils.logger.info(
+            f"Getting parameter '{name}' from Parameter Store...")
+        parameter = self.client.get_parameter(
+            Name=name, WithDecryption=True)
+        return parameter['Parameter']['Value']
 
     @Utils.exception_handler
     async def aioget_parameter_from_parameter_store(self, name):
@@ -33,14 +32,13 @@ class AWSSSMClient:
         :param name: 参数的名称
         :return: 参数的值
         """
+        Utils.logger.info(
+            f"Getting parameter '{name}' from Parameter Store asynchronously...")
         session = aioboto3.Session()
         async with session.client('ssm') as client:
-            try:
-                parameter = await client.get_parameter(Name=name, WithDecryption=True)
-                return parameter['Parameter']['Value']
-            except Exception as e:
-                Utils.logger.error(f"Failed to get parameter '{name}': {e}")
-                raise
+            parameter = await client.get_parameter(Name=name, WithDecryption=True)
+            return parameter['Parameter']['Value']
+
     @Utils.exception_handler
     async def aioget_parameters_from_parameter_store(self, names):
         """
@@ -48,7 +46,10 @@ class AWSSSMClient:
         :param names: 参数名称的列表
         :return: 参数值的列表
         """
-        tasks = [self.aioget_parameter_from_parameter_store(name) for name in names]
+        Utils.logger.info(
+            f"Getting parameters from Parameter Store asynchronously: {', '.join(names)}")
+        tasks = [self.aioget_parameter_from_parameter_store(
+            name) for name in names]
         return await asyncio.gather(*tasks)
 
     @Utils.exception_handler
@@ -59,14 +60,13 @@ class AWSSSMClient:
         """
         for parameter, value in parameters.items():
             full_parameter_name = f"/{parameter}"
-            try:
-                response = self.client.put_parameter(
-                    Name=full_parameter_name,
-                    Value=str(value),
-                    Type='String',
-                    Overwrite=True
-                )
-                Utils.logger.info(f"Parameter '{full_parameter_name}' written: {response}")
-            except Exception as e:
-                Utils.logger.error(f"Failed to write parameter '{full_parameter_name}': {e}")
-                raise
+            Utils.logger.info(
+                f"Writing parameter '{full_parameter_name}' to Parameter Store...")
+            response = self.client.put_parameter(
+                Name=full_parameter_name,
+                Value=str(value),
+                Type='String',
+                Overwrite=True
+            )
+            Utils.logger.info(
+                f"Parameter '{full_parameter_name}' written: {response}")

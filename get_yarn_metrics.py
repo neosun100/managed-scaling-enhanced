@@ -73,3 +73,6 @@ def get_data_from_sqlite(emr_cluster_id="j-1F74M1P9SC57B", metric_name="YARNMemo
     conn.close()
 
     return records
+
+
+# get_data_from_sqlite()
