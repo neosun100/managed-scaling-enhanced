@@ -88,7 +88,7 @@ options:
   --spot-switch-on-demand SPOT_SWITCH_ON_DEMAND
                         Whether to switch to on-demand instances (0: no, 1: yes, default: 0)
 ```
-
+The main program will decide to scale out or scale in based on the logic of the architecture diagram, while also logging a record of the trigger time in sqlite for future condition judgment.
 
 ## appendix
 ### Performance Comparison Between Synchronous and Asynchronous Calls
