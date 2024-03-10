@@ -22,13 +22,13 @@ def main():
         f'{prefix}/monitorIntervalSeconds': 30,
         f'{prefix}/actionIntervalSeconds': 30,
 
-        f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageValue': 70,
+        f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageValue': 20,
         f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageMinutes': 5,
         f'{prefix}/scaleOutAvgCapacityRemainingGBValue': 256,
         f'{prefix}/scaleOutAvgCapacityRemainingGBMinutes': 5,
         f'{prefix}/scaleOutAvgPendingAppNumValue': 3,
         f'{prefix}/scaleOutAvgPendingAppNumMinutes': 5,
-        f'{prefix}/scaleOutAvgTaskNodeCPULoadValue': 20,
+        f'{prefix}/scaleOutAvgTaskNodeCPULoadValue': 60,
         f'{prefix}/scaleOutAvgTaskNodeCPULoadMinutes': 15,
 
         f'{prefix}/scaleInAvgYARNMemoryAvailablePercentageValue': 30,
