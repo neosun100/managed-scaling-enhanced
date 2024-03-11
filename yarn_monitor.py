@@ -8,6 +8,7 @@ import json
 import boto3
 import argparse
 from datetime import datetime, timedelta
+import random
 
 # 配置loguru日志
 logger.add("debug.log", format="{time} {level} {message}", level="DEBUG")
@@ -50,6 +51,52 @@ def get_yarn_rm_url(emr_cluster_id):
     # 构造YARN ResourceManager URL
     yarn_rm_url = f'http://{master_public_dns}:8088'
     return yarn_rm_url
+
+
+@exception_handler
+def get_random_yarn_rm_url(emr_cluster_id):
+    """
+    从指定的EMR集群获取一个随机的YARN ResourceManager URL。
+
+    :param emr_cluster_id: EMR集群ID
+    :return: 一个随机的YARN ResourceManager URL
+    """
+    cluster_details = emr_client.describe_cluster(ClusterId=emr_cluster_id)
+    cluster_details = cluster_details['Cluster']
+
+    # 获取所有主节点的公共DNS
+    if 'MasterPublicDnsNameList' in cluster_details:
+        # 多主节点架构
+        master_public_dns_list = [instance['PublicDnsName'] for instance in cluster_details['MasterPublicDnsNameList']]
+    else:
+        # 单主节点架构
+        master_public_dns_list = [cluster_details['MasterPublicDnsName']]
+
+    # 构造所有YARN ResourceManager URLs
+    yarn_rm_urls = [f'http://{master_public_dns}:8088' for master_public_dns in master_public_dns_list]
+
+    # 随机选择一个URL
+    random_yarn_rm_url = random.choice(yarn_rm_urls)
+    return random_yarn_rm_url
+
+@exception_handler
+def get_yarn_rm_urls(emr_cluster_id):
+    """
+    从指定的EMR集群获取所有YARN ResourceManager URLs。
+
+    :param emr_cluster_id: EMR集群ID
+    :return: 所有YARN ResourceManager URLs的列表
+    """
+    cluster_details = emr_client.describe_cluster(ClusterId=emr_cluster_id)
+    cluster_details = cluster_details['Cluster']
+
+    # 获取所有主节点的公共DNS
+    master_public_dns_list = [instance['PublicDnsName'] for instance in cluster_details['MasterPublicDnsNameList']]
+
+    # 构造所有YARN ResourceManager URLs
+    yarn_rm_urls = [f'http://{master_public_dns}:8088' for master_public_dns in master_public_dns_list]
+    return yarn_rm_urls
+
 
 @exception_handler
 def sanitize_table_name(table_name):
@@ -155,7 +202,7 @@ def metric_table_main(emr_cluster_id, table_name):
     create_table(conn, table_name)
 
     # 获取YARN ResourceManager URL
-    yarn_rm_url = get_yarn_rm_url(emr_cluster_id)
+    yarn_rm_url = get_random_yarn_rm_url(emr_cluster_id)
 
     # 获取集群指标
     metrics = get_cluster_metrics(yarn_rm_url)

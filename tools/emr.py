@@ -1,6 +1,6 @@
 import boto3
 from .utils import Utils  # 使用相对导入从同一包内导入Utils类
-
+import random
 
 class AWSEMRClient:
     """
@@ -43,21 +43,46 @@ class AWSEMRClient:
 
     @Utils.exception_handler
     def get_yarn_rm_url(self, cluster_id):
+        # """
+        # 从指定的EMR集群获取YARN ResourceManager URL。
+
+        # :param emr_cluster_id: EMR集群ID
+        # :return: YARN ResourceManager URL
+        # """
+        # cluster_details = self.emr_client.describe_cluster(ClusterId=cluster_id)
+        # cluster_details = cluster_details['Cluster']
+
+        # # 获取主节点的公共DNS
+        # master_public_dns = cluster_details['MasterPublicDnsName']
+
+        # # 构造YARN ResourceManager URL
+        # yarn_rm_url = f'http://{master_public_dns}:8088'
+        # return yarn_rm_url
+
+
         """
-        从指定的EMR集群获取YARN ResourceManager URL。
+        从指定的EMR集群获取一个随机的YARN ResourceManager URL。
 
         :param emr_cluster_id: EMR集群ID
-        :return: YARN ResourceManager URL
+        :return: 一个随机的YARN ResourceManager URL
         """
         cluster_details = self.emr_client.describe_cluster(ClusterId=cluster_id)
         cluster_details = cluster_details['Cluster']
 
-        # 获取主节点的公共DNS
-        master_public_dns = cluster_details['MasterPublicDnsName']
+        # 获取所有主节点的公共DNS
+        if 'MasterPublicDnsNameList' in cluster_details:
+            # 多主节点架构
+            master_public_dns_list = [instance['PublicDnsName'] for instance in cluster_details['MasterPublicDnsNameList']]
+        else:
+            # 单主节点架构
+            master_public_dns_list = [cluster_details['MasterPublicDnsName']]
 
-        # 构造YARN ResourceManager URL
-        yarn_rm_url = f'http://{master_public_dns}:8088'
-        return yarn_rm_url
+        # 构造所有YARN ResourceManager URLs
+        yarn_rm_urls = [f'http://{master_public_dns}:8088' for master_public_dns in master_public_dns_list]
+
+        # 随机选择一个URL
+        random_yarn_rm_url = random.choice(yarn_rm_urls)
+        return random_yarn_rm_url
 
     @Utils.exception_handler
     def get_managed_scaling_policy(self, cluster_id):
