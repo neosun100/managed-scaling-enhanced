@@ -91,6 +91,103 @@ options:
 The main program will decide to scale out or scale in based on the logic of the architecture diagram, while also logging a record of the trigger time in sqlite for future condition judgment.
 
 ## appendix
+### Core class logic
+
+The logic of the `determine_scale_status` method is as follows:
+a. Obtain the current cluster's `MaximumCapacityUnits` value.
+b. Fetch related monitoring data from the SQLite database and CloudWatch metrics, including:
+
+* `YARNMemoryAvailablePercentage` (used for scaling)
+* `CapacityRemainingGB` (used for scaling)
+* `PendingAppNum` (used for scaling)
+* CPU utilization of task nodes (used for scaling, obtained through the `get_task_node_metrics` method)
+
+c. If any of the monitoring data lists is empty, then return 0 (do not perform scaling operations).
+d. Calculate the individual condition status for scaling out (`scaleOut`):
+
+* `scaleOutMemoryConditionYARNMemoryAvailablePercentageStatus`: whether the average of `YARNMemoryAvailablePercentage` is below the threshold `scaleOutAvgYARNMemoryAvailablePercentageValue`
+* `scaleOutMemoryConditionCapacityRemainingGBStatus`: whether the average of `CapacityRemainingGB` is below the threshold `scaleOutAvgCapacityRemainingGBValue`
+* `scaleOutAppConditionPendingAppNumStatus`: whether the average of `PendingAppNum` is greater than or equal to the threshold `scaleOutAvgPendingAppNumValue`
+* `scaleOutCPULoadStatus`: whether the average CPU utilization of task nodes is greater than or equal to the threshold `scaleOutAvgTaskNodeCPULoadValue`
+* `scaleOutcurrentMaxUnitNumStatus`: whether the current `MaximumCapacityUnits` is less than `maximumUnits`
+
+e. Calculate the comprehensive condition for scaling out:
+
+* `scaleOutMemoryCondition`: `scaleOutMemoryConditionYARNMemoryAvailablePercentageStatus` or `scaleOutMemoryConditionCapacityRemainingGBStatus` is true
+* `scaleOutPendingAppNumCondition`: `scaleOutAppConditionPendingAppNumStatus` is true
+* `scaleOutCPULoadCondition`: `scaleOutCPULoadStatus` is true
+* `scaleOutcurrentMaxUnitCondition`: `scaleOutcurrentMaxUnitNumStatus` is true
+* `scaleOutCondition`: `scaleOutMemoryCondition` and `scaleOutPendingAppNumCondition` and `scaleOutCPULoadCondition` and `scaleOutcurrentMaxUnitCondition` are all true
+
+f. Calculate the individual condition status for scaling in (`scaleIn`):
+
+* `scaleInMemoryConditionYARNMemoryAvailablePercentageStatus`: whether the average of `YARNMemoryAvailablePercentage` is above the threshold `scaleInAvgYARNMemoryAvailablePercentageValue`
+* `scaleInMemoryConditionCapacityRemainingGBStatus`: whether the average of `CapacityRemainingGB` is above the threshold `scaleInAvgCapacityRemainingGBValue`
+* `scaleInAppConditionPendingAppNumStatus`: whether the average of `PendingAppNum` is less than the threshold `scaleInAvgPendingAppNumValue`
+* `scaleInCPULoadStatus`: whether the average CPU utilization of task nodes is less than the threshold `scaleInAvgTaskNodeCPULoadValue`
+* `scaleIncurrentMaxUnitNumStatus`: whether the current `MaximumCapacityUnits` is greater than `minimumUnits`
+
+g. Calculate the comprehensive condition for scaling in:
+
+* `scaleInMemoryCondition`: `scaleInMemoryConditionYARNMemoryAvailablePercentageStatus` or `scaleInMemoryConditionCapacityRemainingGBStatus` is true
+* `scaleInPendingAppNumCondition`: `scaleInAppConditionPendingAppNumStatus` is true
+* `scaleInCPULoadCondition`: `scaleInCPULoadStatus` is true
+* `scaleIncurrentMaxUnitCondition`: `scaleIncurrentMaxUnitNumStatus` is true
+* `scaleInCondition`: (`scaleInMemoryCondition` or `scaleInPendingAppNumCondition` or `scaleInCPULoadCondition`) and `scaleIncurrentMaxUnitCondition` are all true
+
+h. Determine the scaling operation based on the values of `scaleOutCondition` and `scaleInCondition`:
+
+* If `scaleOutCondition` is true and `scaleInCondition` is false, then return 1 (perform scaling out)
+* If `scaleOutCondition` is false and `scaleInCondition` is true, then return -1 (perform scaling in)
+* Otherwise return 0 (do not perform scaling operations)
+
+
+The logic of the `scale_out` method is as follows:
+First, check if it is within the cooldown period, if so, skip the scaling out operation.
+a. Obtain the current cluster's `pendingVirtualCores` and `appsPending` metrics.
+b. If `appsPending` is 0, then return directly, do not perform scaling out operation.
+c. Obtain the current Managed Scaling policy, including `MaximumCapacityUnits` and `MinimumCapacityUnits`.
+d. Calculate the new `MaximumCapacityUnits` value, formula is:
+`new_max_capacity_units = current_max_capacity_units + int((pending_virtual_cores / apps_pending) * self.scaleOutFactor)`
+e. Ensure the new `MaximumCapacityUnits` value is greater than or equal to `MinimumCapacityUnits + 1`.
+f. Ensure the new `MaximumCapacityUnits` value does not exceed the maximum limit of `self.maximumUnits`.
+g. Update the `MaximumCapacityUnits` in the current policy to the newly calculated value.
+h. Use the updated policy to call the `emr_client.put_managed_scaling_policy` method to apply the new policy.
+i. Record the new policy's `MaximumCapacityUnits` value to the SQLite database.
+j. If `self.spot_switch_on_demand` is 1, then check if it is necessary to supplement On-Demand instances. The specific method is:
+
+* Obtain the minimum `MaximumCapacityUnits` value within the past `self.spotInstancesTimeout` seconds from the SQLite database.
+* If this minimum value is greater than the totalVirtualCores of the current cluster, then it is necessary to supplement On-Demand instances.
+* Calculate the number of On-Demand instances needed.
+* Update the `MaximumOnDemandCapacityUnits` in the current policy.
+* Apply the updated policy.
+
+
+The logic of the `scale_in` method is as follows:
+First, check if it is within the cooldown period, if so, skip the scaling in operation.
+a. Obtain the current cluster's `pendingVirtualCores` and `appsPending` metrics.
+b. Obtain the current Managed Scaling policy, including `MaximumCapacityUnits` and `MaximumCoreCapacityUnits`.
+c. If `appsPending` is 0, then set `MaximumCapacityUnits` to `self.minimumUnits`, and set `MaximumOnDemandCapacityUnits` to `self.maximumOnDemandInstancesNumValue`.
+d. If `appsPending` is not 0, then:
+
+* Set `MaximumOnDemandCapacityUnits` to `self.maximumOnDemandInstancesNumValue`.
+    * To maintain consistency with the original OnDemand settings, solving the adjustment issue of this value during the scaling out phase.
+* Calculate the new `MaximumCapacityUnits` value, formula is:
+    `new_max_capacity_units = max(self.minimumUnits, current_max_capacity_units - int((pending_virtual_cores / apps_pending) * self.scaleInFactor))`
+* Update the `MaximumCapacityUnits` in the current policy to the newly calculated value.
+
+e. Use the updated policy to call the `emr_client.put_managed_scaling_policy` method to apply the new policy.
+f. Record the new policy's `MaximumCapacityUnits` value to the SQLite database.
+g. Obtain the list of Instance Fleets for the current cluster.
+h. For each Instance Fleet of type TASK:
+
+* Set its `TargetOnDemandCapacity` to 0.
+* Set its `TargetSpotCapacity` to `MaximumCapacityUnits - MaximumCoreCapacityUnits`.
+* Call the `emr_client.modify_instance_fleet` method to apply the changes.
+
+
+
+
 ### Performance Comparison Between Synchronous and Asynchronous Calls
 ![comparison-of-synchronous-and-asynchronous-performance](imgs/comparison-of-synchronous-and-asynchronous-performance.png)
 Asynchronous call is 38.43% faster.
