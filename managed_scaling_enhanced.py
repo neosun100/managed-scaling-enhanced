@@ -17,6 +17,8 @@ class ManagedScalingEnhanced:
         self.emr_id = emr_id
         self.prefix = prefix
         self.spot_switch_on_demand = spot_switch_on_demand
+        self.last_scale_out_time = 0
+        self.last_scale_in_time = 0
         self.ssm_client = AWSSSMClient()
         self.nodeMetrics_client = NodeMetricsRetriever()
         self.emr_metric_manager = EMRMetricManager()
@@ -49,6 +51,8 @@ class ManagedScalingEnhanced:
             f'/{self.prefix}/scaleInFactor',
             f'/{self.prefix}/spotInstancesTimeout',
             f'/{self.prefix}/maximumOnDemandInstancesNumValue',
+            f'/{self.prefix}/scaleOutCooldownSeconds',
+            f'/{self.prefix}/scaleInCooldownSeconds',
         ]
 
         parameters = [self.ssm_client.get_parameters_from_parameter_store(i) for i in parameter_names]
@@ -70,7 +74,8 @@ class ManagedScalingEnhanced:
         self.scaleInFactor = float(parameters[13])
         self.spotInstancesTimeout = int(parameters[14])
         self.maximumOnDemandInstancesNumValue = int(parameters[15])
-
+        self.scaleOutCooldownSeconds = int(parameters[16])
+        self.scaleInCooldownSeconds = int(parameters[17])
 
 
     @staticmethod
@@ -89,7 +94,6 @@ class ManagedScalingEnhanced:
         """
         根据输入的监控数据和当前Unit，决定是否扩缩容。
         """
-
         currentMaxUnitNum = self.get_current_max_unit_num()
         Utils.logger.info(
             f"The current cluster's Maximum Capacity Units value: {currentMaxUnitNum}")
@@ -259,6 +263,14 @@ class ManagedScalingEnhanced:
 
     @Utils.exception_handler
     def scale_out(self):
+        # 获取当前时间戳
+        current_time = datetime.now().timestamp()
+
+        # 检查是否在冷却时间内
+        if current_time - self.last_scale_out_time < self.scaleOutCooldownSeconds:
+            Utils.logger.info(f"Skipping scale out operation due to cooldown period ({self.scaleOutCooldownSeconds} seconds).")
+            return
+              
         pending_virtual_cores = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'pendingVirtualCores')
         apps_pending = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'appsPending')
 
@@ -275,7 +287,7 @@ class ManagedScalingEnhanced:
 
         # 计算新的 MaximumCapacityUnits
         new_max_capacity_units = current_max_capacity_units + int(
-            (pending_virtual_cores / apps_pending) * self.scaleOutFactor
+            (abs(pending_virtual_cores) / apps_pending) * self.scaleOutFactor
         )
         Utils.logger.info(f"init current_max_capacity_units: {current_max_capacity_units}")
         Utils.logger.info(f"init pending_virtual_cores: {pending_virtual_cores}")
@@ -304,6 +316,9 @@ class ManagedScalingEnhanced:
         conn.commit()
         conn.close()
 
+        # 更新上次扩容时间戳
+        self.last_scale_out_time = current_time
+
         Utils.logger.info(f"New policy applied: {current_policy['ManagedScalingPolicy']}")
 
         # 检查是否需要补充 On-Demand 实例
@@ -326,6 +341,15 @@ class ManagedScalingEnhanced:
 
     @Utils.exception_handler
     def scale_in(self):
+
+        # 获取当前时间戳
+        current_time = datetime.now().timestamp()
+
+        # 检查是否在冷却时间内
+        if current_time - self.last_scale_in_time < self.scaleInCooldownSeconds:
+            Utils.logger.info(f"Skipping scale in operation due to cooldown period ({self.scaleInCooldownSeconds} seconds).")
+            return
+
         # 获取 YARN 指标
         pending_virtual_cores = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'pendingVirtualCores')
         apps_pending = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'appsPending')
@@ -348,7 +372,7 @@ class ManagedScalingEnhanced:
             current_policy['ManagedScalingPolicy']['ComputeLimits']['MaximumOnDemandCapacityUnits'] = self.maximumOnDemandInstancesNumValue
 
             # 计算新的 MaximumCapacityUnits
-            new_max_capacity_units = max(self.minimumUnits, current_max_capacity_units - int((pending_virtual_cores / apps_pending) * self.scaleInFactor))
+            new_max_capacity_units = max(self.minimumUnits, current_max_capacity_units - int((abs(pending_virtual_cores) / apps_pending) * self.scaleInFactor))
 
             # 更新 MaximumCapacityUnits
             current_policy['ManagedScalingPolicy']['ComputeLimits']['MaximumCapacityUnits'] = new_max_capacity_units
@@ -365,6 +389,8 @@ class ManagedScalingEnhanced:
         conn.commit()
         conn.close()
 
+        # 更新上次缩容时间戳
+        self.last_scale_in_time = current_time
         Utils.logger.info(f"New policy applied: {current_policy['ManagedScalingPolicy']}")
 
         # 修改 Instance Fleets

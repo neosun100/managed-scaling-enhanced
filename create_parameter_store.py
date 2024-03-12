@@ -43,7 +43,10 @@ def main():
         f'{prefix}/scaleOutFactor': 1.5,
         f'{prefix}/scaleInFactor': 1.7,   
 
-        f'{prefix}/maximumOnDemandInstancesNumValue': 160,  # 针对defalut情况下：on_demand instance num = core node num         
+        f'{prefix}/maximumOnDemandInstancesNumValue': 160,  # 针对defalut情况下：on_demand instance num = core node num   
+
+        f'{prefix}/scaleOutCooldownSeconds': 60 * 7,
+        f'{prefix}/scaleInCooldownSeconds': 60 * 5,      
     }
 
     # 创建AWSSSMClient实例
