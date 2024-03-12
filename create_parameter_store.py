@@ -22,7 +22,7 @@ def main():
         f'{prefix}/monitorIntervalSeconds': 30,
         f'{prefix}/actionIntervalSeconds': 30,
 
-        f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageValue': 20,
+        f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageValue': 33,
         f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageMinutes': 5,
         f'{prefix}/scaleOutAvgCapacityRemainingGBValue': 256,
         f'{prefix}/scaleOutAvgCapacityRemainingGBMinutes': 5,
@@ -31,7 +31,7 @@ def main():
         f'{prefix}/scaleOutAvgTaskNodeCPULoadValue': 60,
         f'{prefix}/scaleOutAvgTaskNodeCPULoadMinutes': 15,
 
-        f'{prefix}/scaleInAvgYARNMemoryAvailablePercentageValue': 30,
+        f'{prefix}/scaleInAvgYARNMemoryAvailablePercentageValue': 40,
         f'{prefix}/scaleInAvgYARNMemoryAvailablePercentageMinutes': 3,
         f'{prefix}/scaleInAvgCapacityRemainingGBValue': 512,
         f'{prefix}/scaleInAvgCapacityRemainingGBMinutes': 3,

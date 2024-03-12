@@ -273,8 +273,6 @@ class ManagedScalingEnhanced:
               
         pending_virtual_cores = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'pendingVirtualCores')
         apps_pending = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'appsPending')
-        total_virtual_cores = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'totalVirtualCores')
-        apps_running = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'appsRunning')
 
         # 如果 apps_pending 为 0,则直接返回
         if apps_pending == 0:
@@ -289,12 +287,12 @@ class ManagedScalingEnhanced:
 
         # 计算新的 MaximumCapacityUnits
         new_max_capacity_units = current_max_capacity_units + int(
-            (total_virtual_cores / apps_running) * self.scaleOutFactor
+            (abs(pending_virtual_cores) / apps_pending) * self.scaleOutFactor
         )
         Utils.logger.info(f"init current_max_capacity_units: {current_max_capacity_units}")
-        Utils.logger.info(f"init total_virtual_cores: {total_virtual_cores}")
+        Utils.logger.info(f"init pending_virtual_cores: {pending_virtual_cores}")
         Utils.logger.info(f"init self.scaleOutFactor: {self.scaleOutFactor}")
-        Utils.logger.info(f"init apps_running: {apps_running}")        
+        Utils.logger.info(f"init apps_pending: {apps_pending}")        
         Utils.logger.info(f"init new_max_capacity_units: {new_max_capacity_units}")
 
         # 确保新的 MaximumCapacityUnits 大于 MinimumCapacityUnits
@@ -355,8 +353,6 @@ class ManagedScalingEnhanced:
         # 获取 YARN 指标
         pending_virtual_cores = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'pendingVirtualCores')
         apps_pending = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'appsPending')
-        total_virtual_cores = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'totalVirtualCores')
-        apps_running = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'appsRunning')
 
         # 获取当前策略
         emr_client = AWSEMRClient()
@@ -376,7 +372,7 @@ class ManagedScalingEnhanced:
             current_policy['ManagedScalingPolicy']['ComputeLimits']['MaximumOnDemandCapacityUnits'] = self.maximumOnDemandInstancesNumValue
 
             # 计算新的 MaximumCapacityUnits
-            new_max_capacity_units = max(self.minimumUnits, current_max_capacity_units - int((total_virtual_cores / apps_running) * self.scaleInFactor))
+            new_max_capacity_units = max(self.minimumUnits, current_max_capacity_units - int((abs(pending_virtual_cores) / apps_pending) * self.scaleInFactor))
 
             # 更新 MaximumCapacityUnits
             current_policy['ManagedScalingPolicy']['ComputeLimits']['MaximumCapacityUnits'] = new_max_capacity_units
