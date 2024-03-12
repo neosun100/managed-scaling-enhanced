@@ -205,7 +205,7 @@ class ManagedScalingEnhanced:
         Utils.logger.info(
             f"scaleOutcurrentMaxUnitCondition: {scaleOutcurrentMaxUnitCondition}")
 
-        scaleOutCondition = scaleOutMemoryCondition and scaleOutPendingAppNumCondition and scaleOutCPULoadCondition and scaleOutcurrentMaxUnitCondition
+        scaleOutCondition = (scaleOutMemoryCondition or scaleOutPendingAppNumCondition) and scaleOutCPULoadCondition and scaleOutcurrentMaxUnitCondition
         Utils.logger.info(f"scaleOutCondition: {scaleOutCondition}")
 
         # scaleIn单项条件状态 🐒
@@ -275,11 +275,17 @@ class ManagedScalingEnhanced:
         apps_pending = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'appsPending')
         total_virtual_cores = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'totalVirtualCores')
         apps_running = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'appsRunning')
+        reserved_virtual_cores = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'reservedVirtualCores')
 
-        # 如果 apps_pending 为 0,则直接返回
+        # 如果没有等待分配资源的应用程序且集群资源利用率较低,则直接返回
         if apps_pending == 0:
-            Utils.logger.info("No pending applications, skipping scale out operation.")
-            return
+            if reserved_virtual_cores <= 10:
+                Utils.logger.info("No pending applications and cluster resource utilization is low, skipping scale out operation.")
+                return
+            else:
+                Utils.logger.info("No pending applications, but cluster resource utilization is high, proceeding with scale out operation.")
+        else:
+            Utils.logger.info(f"There are {apps_pending} pending applications, proceeding with scale out operation.")
 
         # 获取当前策略
         emr_client = AWSEMRClient()
@@ -289,7 +295,7 @@ class ManagedScalingEnhanced:
 
         # 计算新的 MaximumCapacityUnits
         new_max_capacity_units = current_max_capacity_units + int(
-            (total_virtual_cores / apps_running) * self.scaleOutFactor
+            (total_virtual_cores / apps_running + reserved_virtual_cores) * self.scaleOutFactor
         )
         Utils.logger.info(f"init current_max_capacity_units: {current_max_capacity_units}")
         Utils.logger.info(f"init total_virtual_cores: {total_virtual_cores}")
