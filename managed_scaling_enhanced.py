@@ -88,7 +88,7 @@ class ManagedScalingEnhanced:
         conn = sqlite3.connect(f"{sanitized_table_name}.db")
         c = conn.cursor()
         c.execute(f"CREATE TABLE IF NOT EXISTS {sanitized_table_name} (last_scale_out_time INTEGER, last_scale_in_time INTEGER)")
-        c.execute(f"SELECT last_scale_out_time, last_scale_in_time FROM {sanitized_table_name}")
+        c.execute(f"SELECT last_scale_out_time, last_scale_in_time FROM {sanitized_table_name} ORDER BY rowid DESC LIMIT 1")
         result = c.fetchone()
         if result:
             self.last_scale_out_time, self.last_scale_in_time = result
