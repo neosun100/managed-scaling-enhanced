@@ -315,7 +315,7 @@ class ManagedScalingEnhanced:
 
         # 如果没有等待分配资源的应用程序且集群资源利用率较低,则直接返回
         if apps_pending == 0:
-            if reserved_virtual_cores <= 10:
+            if reserved_virtual_cores <= 2:
                 Utils.logger.info("No pending applications and cluster resource utilization is low, skipping scale out operation.")
                 return
             else:
@@ -331,7 +331,7 @@ class ManagedScalingEnhanced:
 
         # 计算新的 MaximumCapacityUnits
         if apps_pending == 0:
-            new_max_capacity_units = current_max_capacity_units + reserved_virtual_cores * self.scaleOutFactor
+            new_max_capacity_units = current_max_capacity_units + int(reserved_virtual_cores * self.scaleOutFactor)
         
         else:
             new_max_capacity_units = current_max_capacity_units + int(
