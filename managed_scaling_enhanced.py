@@ -17,12 +17,13 @@ class ManagedScalingEnhanced:
         self.emr_id = emr_id
         self.prefix = prefix
         self.spot_switch_on_demand = spot_switch_on_demand
-        self.last_scale_out_time = 0
-        self.last_scale_in_time = 0
+        # self.last_scale_out_time = 0
+        # self.last_scale_in_time = 0
         self.ssm_client = AWSSSMClient()
         self.nodeMetrics_client = NodeMetricsRetriever()
         self.emr_metric_manager = EMRMetricManager()
         self.parameters = self._get_parameters()
+        self.get_last_scale_times()
 
     @Utils.exception_handler
     def get_current_max_unit_num(self):
@@ -76,6 +77,40 @@ class ManagedScalingEnhanced:
         self.maximumOnDemandInstancesNumValue = int(parameters[15])
         self.scaleOutCooldownSeconds = int(parameters[16])
         self.scaleInCooldownSeconds = int(parameters[17])
+
+
+    @Utils.exception_handler
+    def get_last_scale_times(self):
+        """
+        从 SQLite 数据库中获取上次扩缩容时间。
+        """
+        sanitized_table_name = self.sanitize_table_name(f"{self.emr_id}_ms_last_scale_times")
+        conn = sqlite3.connect(f"{sanitized_table_name}.db")
+        c = conn.cursor()
+        c.execute(f"CREATE TABLE IF NOT EXISTS {sanitized_table_name} (last_scale_out_time INTEGER, last_scale_in_time INTEGER)")
+        c.execute(f"SELECT last_scale_out_time, last_scale_in_time FROM {sanitized_table_name}")
+        result = c.fetchone()
+        if result:
+            self.last_scale_out_time, self.last_scale_in_time = result
+            Utils.logger.info(f"Retrieved last scale out time: {self.last_scale_out_time}, last scale in time: {self.last_scale_in_time}")
+        else:
+            self.last_scale_out_time, self.last_scale_in_time = 0, 0
+            Utils.logger.info("No previous scale times found, setting to 0")
+        conn.close()
+
+    @Utils.exception_handler
+    def update_last_scale_times(self):
+        """
+        更新 SQLite 数据库中的上次扩缩容时间。
+        """
+        sanitized_table_name = self.sanitize_table_name(f"{self.emr_id}_ms_last_scale_times")
+        conn = sqlite3.connect(f"{sanitized_table_name}.db")
+        c = conn.cursor()
+        c.execute(f"CREATE TABLE IF NOT EXISTS {sanitized_table_name} (last_scale_out_time INTEGER, last_scale_in_time INTEGER)")
+        c.execute(f"REPLACE INTO {sanitized_table_name} (last_scale_out_time, last_scale_in_time) VALUES (?, ?)", (self.last_scale_out_time, self.last_scale_in_time))
+        conn.commit()
+        Utils.logger.info(f"Updated last scale out time: {self.last_scale_out_time}, last scale in time: {self.last_scale_in_time}")
+        conn.close()
 
 
     @staticmethod
@@ -265,10 +300,11 @@ class ManagedScalingEnhanced:
     def scale_out(self):
         # 获取当前时间戳
         current_time = datetime.now().timestamp()
+        Utils.logger.info(f"⌛️ last_scale_out_time: {self.last_scale_out_time}")
 
         # 检查是否在冷却时间内
         if current_time - self.last_scale_out_time < self.scaleOutCooldownSeconds:
-            Utils.logger.info(f"Skipping scale out operation due to cooldown period ({self.scaleOutCooldownSeconds} seconds).")
+            Utils.logger.info(f"⌛️ Skipping scale out operation due to cooldown period ({self.scaleOutCooldownSeconds} seconds).")
             return
               
         pending_virtual_cores = self.emr_metric_manager.get_yarn_metrics(self.emr_id, 'pendingVirtualCores')
@@ -329,7 +365,10 @@ class ManagedScalingEnhanced:
         conn.close()
 
         # 更新上次扩容时间戳
-        self.last_scale_out_time = current_time
+        self.last_scale_out_time = int(current_time)
+        Utils.logger.info(f"⌛️ last_scale_out_time: {self.last_scale_out_time}")
+        self.update_last_scale_times()
+        Utils.logger.info(f"⌛️ process update_last_scale_times")
 
         Utils.logger.info(f"New policy applied: {current_policy['ManagedScalingPolicy']}")
 
@@ -356,10 +395,11 @@ class ManagedScalingEnhanced:
 
         # 获取当前时间戳
         current_time = datetime.now().timestamp()
+        Utils.logger.info(f"⌛️ last_scale_in_time: {self.last_scale_in_time}")
 
         # 检查是否在冷却时间内
         if current_time - self.last_scale_in_time < self.scaleInCooldownSeconds:
-            Utils.logger.info(f"Skipping scale in operation due to cooldown period ({self.scaleInCooldownSeconds} seconds).")
+            Utils.logger.info(f"⌛️ Skipping scale in operation due to cooldown period ({self.scaleInCooldownSeconds} seconds).")
             return
 
         # 获取 YARN 指标
@@ -404,8 +444,16 @@ class ManagedScalingEnhanced:
         conn.close()
 
         # 更新上次缩容时间戳
-        self.last_scale_in_time = current_time
+        self.last_scale_in_time = int(current_time)
+        Utils.logger.info(f"⌛️ last_scale_in_time: {self.last_scale_out_time}")
+        self.update_last_scale_times()
+        Utils.logger.info(f"⌛️ process update_last_scale_times")
         Utils.logger.info(f"New policy applied: {current_policy['ManagedScalingPolicy']}")
+
+        # 更新上次扩容时间戳
+        self.last_scale_out_time = int(current_time)
+
+
 
         # 修改 Instance Fleets
         instance_fleets = emr_client.list_instance_fleets(ClusterId=self.emr_id)['InstanceFleets']

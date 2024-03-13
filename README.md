@@ -3,7 +3,7 @@ An advanced version of managed scaling that dynamically adjusts resources to mee
 
 
 ## 1. Enhanced Managed Scaling: Logic Flow Diagram
-![managed-scaling-enhanced-logic-diagram](imgs/managed-scaling-enhanced-logic-diagram.png)
+![managed-scaling-enhanced-logic-diagram](imgs/Xnip2024-03-13_10-54-43-Wednesday.png)
 
 ## 2. User Guide
 
@@ -24,7 +24,7 @@ Specific parameters
         f'{prefix}/monitorIntervalSeconds': 30,
         f'{prefix}/actionIntervalSeconds': 30,
 
-        f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageValue': 20,
+        f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageValue': 33,
         f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageMinutes': 5,
         f'{prefix}/scaleOutAvgCapacityRemainingGBValue': 256,
         f'{prefix}/scaleOutAvgCapacityRemainingGBMinutes': 5,
@@ -33,7 +33,7 @@ Specific parameters
         f'{prefix}/scaleOutAvgTaskNodeCPULoadValue': 60,
         f'{prefix}/scaleOutAvgTaskNodeCPULoadMinutes': 15,
 
-        f'{prefix}/scaleInAvgYARNMemoryAvailablePercentageValue': 30,
+        f'{prefix}/scaleInAvgYARNMemoryAvailablePercentageValue': 40,
         f'{prefix}/scaleInAvgYARNMemoryAvailablePercentageMinutes': 3,
         f'{prefix}/scaleInAvgCapacityRemainingGBValue': 512,
         f'{prefix}/scaleInAvgCapacityRemainingGBMinutes': 3,

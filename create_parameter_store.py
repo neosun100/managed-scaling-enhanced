@@ -15,29 +15,29 @@ def main():
 
     # 使用prefix变量构建参数字典
     parameters = {
-        f'{prefix}/minimumUnits': 320,  # max nuit 的最小值
+        f'{prefix}/minimumUnits': 300,  # max nuit 的最小值
         f'{prefix}/maximumUnits': 1000, # max nuit 的最大值
 
         f'{prefix}/spotInstancesTimeout': 60*30,
         f'{prefix}/monitorIntervalSeconds': 30,
         f'{prefix}/actionIntervalSeconds': 30,
 
-        f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageValue': 33,
+        f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageValue': 30,
         f'{prefix}/scaleOutAvgYARNMemoryAvailablePercentageMinutes': 5,
         f'{prefix}/scaleOutAvgCapacityRemainingGBValue': 256,
         f'{prefix}/scaleOutAvgCapacityRemainingGBMinutes': 5,
         f'{prefix}/scaleOutAvgPendingAppNumValue': 3,
         f'{prefix}/scaleOutAvgPendingAppNumMinutes': 5,
-        f'{prefix}/scaleOutAvgTaskNodeCPULoadValue': 60,
+        f'{prefix}/scaleOutAvgTaskNodeCPULoadValue': 42,
         f'{prefix}/scaleOutAvgTaskNodeCPULoadMinutes': 15,
 
         f'{prefix}/scaleInAvgYARNMemoryAvailablePercentageValue': 40,
         f'{prefix}/scaleInAvgYARNMemoryAvailablePercentageMinutes': 3,
-        f'{prefix}/scaleInAvgCapacityRemainingGBValue': 512,
+        f'{prefix}/scaleInAvgCapacityRemainingGBValue': 5120,
         f'{prefix}/scaleInAvgCapacityRemainingGBMinutes': 3,
         f'{prefix}/scaleInAvgPendingAppNumValue': 2,
         f'{prefix}/scaleInAvgPendingAppNumMinutes': 2,
-        f'{prefix}/scaleInAvgTaskNodeCPULoadValue': 40,
+        f'{prefix}/scaleInAvgTaskNodeCPULoadValue': 30,
         f'{prefix}/scaleInAvgTaskNodeCPULoadMinutes': 15,
 
         f'{prefix}/scaleOutFactor': 1.5,

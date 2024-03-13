@@ -75,7 +75,7 @@ class EMRMetricManager:
         expected_data_points = time_range_minutes * 60 // monitor_interval_seconds
 
         # 检查数据是否足够
-        if len(records) < expected_data_points * 0.8:
+        if len(records) < expected_data_points * 0.7:
             Utils.logger.warning(
                 f"Not enough data in the specified time range ({time_range_minutes} minutes) for metric '{metric_name}'. Expected {expected_data_points} data points, but only got {len(records)}.")
             return []
