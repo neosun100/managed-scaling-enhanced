@@ -68,3 +68,6 @@ if __name__ == '__main__':
     schedule_main(args.emr_id, args.prefix)
 
 # python main.py --emr-id j-1F74M1P9SC57B --prefix managedScalingEnhanced 
+    
+
+    
