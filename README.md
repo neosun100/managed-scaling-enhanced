@@ -1,6 +1,6 @@
 # managed-scaling-enhanced
 An advanced version of managed scaling that dynamically adjusts resources to meet workload demands with improved efficiency and precision.
-
+[中文版本](README_CN.md)
 
 ## 1. Enhanced Managed Scaling: Logic Flow Diagram
 ![managed-scaling-enhanced-logic-diagram](imgs/Xnip2024-03-13_10-54-43-Wednesday.png)
