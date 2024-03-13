@@ -294,9 +294,13 @@ class ManagedScalingEnhanced:
         current_min_capacity_units = current_policy['ManagedScalingPolicy']['ComputeLimits']['MinimumCapacityUnits']
 
         # 计算新的 MaximumCapacityUnits
-        new_max_capacity_units = current_max_capacity_units + int(
-            (total_virtual_cores / apps_running + reserved_virtual_cores) * self.scaleOutFactor
-        )
+        if apps_pending == 0:
+            new_max_capacity_units = current_max_capacity_units + reserved_virtual_cores * self.scaleOutFactor
+        
+        else:
+            new_max_capacity_units = current_max_capacity_units + int(
+                (total_virtual_cores / apps_running) * self.scaleOutFactor
+            )
         Utils.logger.info(f"init current_max_capacity_units: {current_max_capacity_units}")
         Utils.logger.info(f"init total_virtual_cores: {total_virtual_cores}")
         Utils.logger.info(f"init self.scaleOutFactor: {self.scaleOutFactor}")
